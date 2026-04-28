@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Should I Buy This?</title>
+
+<style>
+:root {
+  --green:#16a34a;
+  --red:#dc2626;
+  --yellow:#f59e0b;
+  --bg:#f7f7fb;
+  --card:#ffffff;
+  --text:#111;
+  --muted:#666;
+}
+
+* {
+  box-sizing:border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin:0;
+  font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding:16px;
+}
+
+.container {
+  max-width:420px;
+  margin:auto;
+}
+
+h1 {
+  font-size:22px;
+  margin:0;
+}
+
+.subtitle {
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:16px;
+}
+
+/* Cards */
+.card {
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.05);
+  transition:0.2s;
+}
+
+/* Inputs */
+input, select {
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  margin-top:10px;
+  border-radius:12px;
+  border:1px solid #e5e5e5;
+  background:#fafafa;
+}
+
+input:focus {
+  outline:none;
+  border-color:#999;
+  background:#fff;
+}
+
+/* Button */
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#111;
+  color:white;
+  font-size:14px;
+  margin-top:12px;
+}
+
+/* Result */
+.result {
+  text-align:center;
+}
+
+.decision {
+  font-size:30px;
+  font-weight:700;
+  margin-bottom:6px;
+  transition:0.2s;
+}
+
+.green { color:var(--green); }
+.red { color:var(--red); }
+.yellow { color:var(--yellow); }
+
+.big {
+  font-size:34px;
+  font-weight:700;
+}
+
+.small {
+  font-size:13px;
+  color:var(--muted);
+}
+
+.row {
+  display:flex;
+  justify-content:space-between;
+  margin-top:12px;
+  font-size:14px;
+}
+
+/* Confidence bar */
+.bar {
+  height:10px;
+  border-radius:6px;
+  background:#eee;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.fill {
+  height:100%;
+  width:0%;
+  transition:width 0.4s ease;
+}
+
+/* Fade animation */
+.fade {
+  animation:fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity:0; transform:translateY(5px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* Toggle switch */
+.toggle {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:10px;
+  font-size:14px;
+}
+.summary {
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  color:#666;
+  margin-bottom:12px;
+}
+
+.deal-card {
+  border:1px solid #eee;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:10px;
+  background:#fafafa;
+}
+
+.deal-top {
+  display:flex;
+  justify-content:space-between;
+  font-weight:bold;
+}
+
+.deal-profit {
+  font-size:18px;
+}
+
+.deal-meta {
+  font-size:13px;
+  color:#666;
+  margin-top:4px;
+}
+
+.deal-actions {
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+}
+
+.deal-actions button {
+  flex:1;
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  font-size:12px;
+  background:#eee;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Should I Buy This?</h1>
+<div class="subtitle">Instant reseller decision tool</div>
+
+<!-- INPUT CARD -->
+<div class="card fade">
+  <h3>Quick Check</h3>
+
+  <input id="buy" type="number" placeholder="Buy Price ($)">
+  <input id="sell" type="number" placeholder="Expected Sell Price ($)">
+
+  <button onclick="toggleAdvanced()">⚙️ Advanced Settings</button>
+
+  <div id="advanced" style="display:none;">
+
+    <select id="platform" onchange="setPlatform()">
+      <option value="ebay">eBay</option>
+      <option value="amazon">Amazon</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <input id="fee" type="number" placeholder="Fee (%)">
+
+    <input id="shipping" type="number" placeholder="Shipping Cost ($)">
+
+    <div class="toggle">
+      <span>Customer pays shipping</span>
+      <input type="checkbox" id="buyerPays">
+    </div>
+
+    <input id="targetProfit" type="number" placeholder="Target Profit ($)">
+
+  </div>
+</div>
+
+<!-- RESULT CARD -->
+<div class="card result fade">
+
+  <div id="decision" class="decision">—</div>
+
+  <div class="big" id="profit">$0.00</div>
+  <div class="small">Estimated Profit</div>
+
+  <div class="row">
+    <div>ROI: <span id="roi">0%</span></div>
+    <div>Max Buy: <span id="max">$0</span></div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="small">Confidence</div>
+    <div class="bar">
+      <div id="fill" class="fill"></div>
+    </div>
+  </div>
+
+  <div class="small" id="insight" style="margin-top:10px;"></div>
+  <button onclick="saveCurrentDeal()" style="background:var(--green); margin-top:15px;">💾 Save to History</button>
+</div>
+
+</div>
+<!-- DEAL HISTORY -->
+<div class="card fade">
+  <h3>Deal History</h3>
+
+  <div class="summary">
+    <div>Total: <span id="totalDeals">0</span></div>
+    <div>Avg ROI: <span id="avgROI">0%</span></div>
+    <div>Profit: <span id="totalProfit">$0</span></div>
+  </div>
+
+  <div id="dealList"></div>
+</div>
+</div>
+
+<script>
+// 1. DATA MANAGEMENT: Load from localStorage or start empty
+let deals = JSON.parse(localStorage.getItem('dealHistory')) || [];
+
+const inputs = document.querySelectorAll("input, select, #buyerPays");
+inputs.forEach(i => i.addEventListener("input", calculate));
+
+// Run initial render to show saved deals
+renderDeals();
+
+function toggleAdvanced(){
+  const adv = document.getElementById("advanced");
+  adv.style.display = adv.style.display === "none" ? "block" : "none";
+}
+
+function setPlatform(){
+  const p = document.getElementById("platform").value;
+  if(p==="ebay") document.getElementById("fee").value = 13;
+  if(p==="amazon") document.getElementById("fee").value = 15;
+  calculate(); // Recalculate after platform change
+}
+
+function calculate(){
+  const buy = parseFloat(document.getElementById("buy").value) || 0;
+  const sell = parseFloat(document.getElementById("sell").value) || 0;
+  const feePercent = parseFloat(document.getElementById("fee").value) || 13;
+  const shippingInput = parseFloat(document.getElementById("shipping").value) || 5;
+  const buyerPays = document.getElementById("buyerPays").checked;
+  const targetProfit = parseFloat(document.getElementById("targetProfit").value) || 0;
+
+  const shipping = buyerPays ? 0 : shippingInput;
+  const fees = sell * (feePercent/100);
+  const profit = sell - buy - fees - shipping;
+
+  const roi = buy > 0 ? (profit/buy)*100 : 0;
+
+  let maxBuy = sell - fees - shipping;
+  if(targetProfit > 0){
+    maxBuy = sell - fees - shipping - targetProfit;
+  }
+
+  let decision="", cls="", insight="", confidence=0;
+
+  if(profit>0 && roi>50){
+    decision="🔥 BUY"; cls="green";
+    insight="Excellent margin. Strong flip.";
+    confidence=90;
+  } else if(profit>0 && roi>25){
+    decision="✅ GOOD"; cls="green";
+    insight="Solid deal worth considering.";
+    confidence=65;
+  } else if(profit>0){
+    decision="⚠️ RISKY"; cls="yellow";
+    insight="Low margin. Be cautious.";
+    confidence=45;
+  } else {
+    decision="❌ SKIP"; cls="red";
+    insight="Not profitable.";
+    confidence=15;
+  }
+
+  // Update UI
+  document.getElementById("decision").textContent = decision;
+  document.getElementById("decision").className = "decision "+cls;
+  document.getElementById("profit").textContent = "$"+profit.toFixed(2);
+  document.getElementById("roi").textContent = roi.toFixed(1)+"%";
+  document.getElementById("max").textContent = "$"+maxBuy.toFixed(2);
+  document.getElementById("insight").textContent = insight;
+
+  const fill = document.getElementById("fill");
+  fill.style.width = confidence+"%";
+  if(confidence>70) fill.style.background="var(--green)";
+  else if(confidence>40) fill.style.background="var(--yellow)";
+  else fill.style.background="var(--red)";
+}
+
+// 2. SAVING DATA
+function saveCurrentDeal() {
+  const buy = parseFloat(document.getElementById("buy").value) || 0;
+  const sell = parseFloat(document.getElementById("sell").value) || 0;
+  const profit = parseFloat(document.getElementById("profit").textContent.replace('$', '')) || 0;
+  const roi = parseFloat(document.getElementById("roi").textContent) || 0;
+  const decision = document.getElementById("decision").textContent;
+
+  if (buy === 0 || sell === 0) return alert("Enter buy and sell prices first!");
+
+  const newDeal = {
+    id: Date.now(),
+    buy,
+    sell,
+    profit,
+    roi,
+    decision
+  };
+
+  deals.unshift(newDeal); // Add to beginning of list
+  updateStorage();
+  renderDeals();
+}
+
+function deleteDeal(id) {
+  deals = deals.filter(d => d.id !== id);
+  updateStorage();
+  renderDeals();
+}
+
+function updateStorage() {
+  localStorage.setItem('dealHistory', JSON.stringify(deals));
+}
+
+// 3. DISPLAYING DATA
+function renderDeals() {
+  const list = document.getElementById("dealList");
+  list.innerHTML = "";
+
+  let totalProfit = 0;
+  let totalROI = 0;
+
+  deals.forEach(d => {
+    totalProfit += d.profit;
+    totalROI += d.roi;
+
+    const div = document.createElement("div");
+    div.className = "deal-card fade";
+
+    div.innerHTML = `
+      <div class="deal-top">
+        <div class="deal-profit" style="color:${d.profit > 0 ? 'var(--green)' : 'var(--red)'}">$${d.profit.toFixed(2)}</div>
+        <div>${d.decision}</div>
+      </div>
+      <div class="deal-meta">
+        ROI: ${d.roi.toFixed(1)}% | Buy: $${d.buy} → Sell: $${d.sell}
+      </div>
+      <div class="deal-actions">
+        <button onclick="deleteDeal(${d.id})" style="background:#fee2e2; color:#b91c1c;">Delete</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  document.getElementById("totalDeals").textContent = deals.length;
+  document.getElementById("avgROI").textContent = deals.length > 0 ? (totalROI / deals.length).toFixed(1) + "%" : "0%";
+  document.getElementById("totalProfit").textContent = "$" + totalProfit.toFixed(2);
+}
+</script>
